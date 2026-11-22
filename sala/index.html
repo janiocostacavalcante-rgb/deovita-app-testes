@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob: mediastream:; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'">
+<meta name="robots" content="noindex,nofollow">
+<title>Consulta por vídeo · DeoVita</title>
+<link rel="icon" href="logo.png">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:#0F1B20;color:#F4F7F8;font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid #86C8C5;outline-offset:2px}
+#palco{position:fixed;inset:0;background:#0F1B20}
+video{background:#17232B;object-fit:cover}
+#remoto{position:absolute;inset:0;width:100%;height:100%}
+#local{position:absolute;top:calc(64px + env(safe-area-inset-top,0px));right:12px;width:28vw;max-width:150px;min-width:96px;aspect-ratio:3/4;border-radius:14px;border:2px solid rgba(255,255,255,.7);transform:scaleX(-1);z-index:3;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+#local.desligada{opacity:.35}
+#topo{position:absolute;top:0;left:0;right:0;z-index:4;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;background:linear-gradient(rgba(15,27,32,.85),rgba(15,27,32,0))}
+#topo b{font-size:16px;font-weight:700;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#topo small{display:block;font-size:12px;color:#C9D6DC}
+#topo .tx{flex:1;min-width:0}
+#tempo{font-variant-numeric:tabular-nums;font-size:13px;background:rgba(0,0,0,.35);border-radius:999px;padding:4px 10px}
+#centro{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:24px;z-index:2;pointer-events:none}
+#centro>*{pointer-events:auto}
+#centro .bola{width:96px;height:96px;border-radius:50%;background:#23756D;display:grid;place-items:center;font-size:34px;font-weight:800}
+#centro p{margin:0;max-width:320px;color:#DCE4E8}
+#centro .erro{color:#FFB4B2}
+/* A marca fica sempre no canto inferior esquerdo, por cima do vídeo, para o médico e para o paciente. */
+#marca{position:absolute;left:calc(12px + env(safe-area-inset-left,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:5;width:64px;height:64px;border-radius:16px;background:rgba(255,255,255,.92);display:grid;place-items:center;box-shadow:0 4px 14px rgba(0,0,0,.35);pointer-events:none}
+#marca img{width:52px;height:52px;display:block}
+#controles{position:absolute;left:0;right:0;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:4;display:flex;justify-content:center;gap:12px;padding:0 88px}
+.ctl{width:56px;height:56px;border-radius:50%;border:0;background:rgba(255,255,255,.16);display:grid;place-items:center;backdrop-filter:blur(6px)}
+.ctl[aria-pressed="true"]{background:#F4F7F8;color:#0F1B20}
+.ctl.sair{background:#C81E1C}
+.ctl svg{width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn{min-height:46px;padding:0 20px;border-radius:999px;border:1px solid #5AB2AE;background:#5AB2AE;color:#0F2A28;font-weight:700}
+.btn.sec{background:transparent;color:#86C8C5}
+#aviso-remoto{position:absolute;left:50%;top:calc(64px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:4;background:rgba(0,0,0,.55);border-radius:999px;padding:6px 12px;font-size:13px;white-space:nowrap}
+[hidden]{display:none!important}
+@media (min-width:700px){#local{width:180px;max-width:180px}}
+</style>
+</head>
+<body>
+<main id="palco">
+  <video id="remoto" autoplay playsinline aria-label="Vídeo da outra pessoa"></video>
+  <video id="local" autoplay playsinline muted aria-label="Sua câmera"></video>
+  <header id="topo">
+    <div class="tx"><b id="titulo">Consulta por vídeo</b><small id="estado" role="status" aria-live="polite">Preparando…</small></div>
+    <span id="tempo" hidden>00:00</span>
+  </header>
+  <div id="aviso-remoto" hidden></div>
+  <div id="centro">
+    <div class="bola" id="bola" aria-hidden="true"></div>
+    <p id="mensagem"></p>
+    <button class="btn" id="tentar" type="button" hidden>Tentar de novo</button>
+    <button class="btn sec" id="sem-camera" type="button" hidden>Entrar sem câmera e microfone</button>
+    <button class="btn" id="voltar" type="button" hidden>Voltar</button>
+  </div>
+  <div id="marca" aria-label="DeoVita" role="img"><img src="logo.png" alt=""></div>
+  <nav id="controles" aria-label="Controles da chamada">
+    <button class="ctl" id="mic" type="button" aria-label="Desligar microfone" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/><path class="risco" d="M4 4l16 16" hidden/></svg></button>
+    <button class="ctl" id="cam" type="button" aria-label="Desligar câmera" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/><path class="risco" d="M4 4l16 16" hidden/></svg></button>
+    <button class="ctl sair" id="sair" type="button" aria-label="Encerrar a chamada"><svg viewBox="0 0 24 24"><path d="M3 14c5-5 13-5 18 0l-2.5 2.5-3.5-1.5v-2.5a10 10 0 00-6 0V15l-3.5 1.5z"/></svg></button>
+  </nav>
+</main>
+<script src="config.js"></script>
+<script src="sala.js"></script>
+</body>
+</html>
